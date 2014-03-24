@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<title>Transcriberer</title>
+	<style>
+		html, body
+		{
+			height: 100%;
+		}
+		
+		body
+		{
+			background: #262627;
+			color: #959595;
+			background-image: url("images/noise4.png");
+			overflow: hidden;
+			font-family: sans;
+		}
+		
+		a
+		{
+			color: #e0e0e0;
+			text-decoration: none;
+		}
+		
+		a:hover
+		{
+			color: #ffffff;
+			text-decoration: underline;
+		}
+		
+		body:before
+		{
+			content: "";
+			position: absolute;
+			width: 200%;
+			height: 200%;
+			top: -50%;
+			left: -50%;
+			z-index: -1;
+			background: url("images/background.svg");
+			transform: rotate(-10deg);
+		}
+		
+		audio
+		{
+			width: 100%;
+			height: 45px;
+		}
+
+		#controls
+		{
+			list-style-type: none;
+			text-align: center;
+			margin: 30px 0 0 0;
+			padding: 0;
+		}
+		
+		#controls li
+		{
+			display: inline-block;
+			vertical-align: top;
+			margin: 0;
+			padding: 0;
+		}
+		
+		#controls li a
+		{
+			text-decoration: none;
+		}
+		
+		.bottom-icon
+		{
+			position: relative;
+			vertical-align: bottom !important;
+			/* TODO: This is less nice than I'd like */
+			margin-left: -45px !important;
+		}
+		
+		.bottom-icon:last-child
+		{
+			/* TODO: This is less nice than I'd like */
+			margin-left: -200px !important;
+		}
+		#play-button
+		{
+			/*TODO: Could just do some preloading here rather than limit ourselves to specific sizes*/
+			width: 84px;
+			height: 60px;
+		}
+		
+		.control-icon
+		{
+			border-radius: 5px;
+			background-color: #a0a0a0;
+			transition: background-color 0.5s, box-shadow 0.5s;
+		}
+		#controls li a:hover .control-icon, .control-icon-hover, #close-link:hover, #help-link:hover
+		{
+			border-radius: 5px;
+			background-color: #ffffff;
+			box-shadow: 0px 0px 2px #ffffff;
+			transition: background-color 0.5s, box-shadow 0.5s;
+		}
+		
+		.control-label
+		{
+			display: inline-block;
+			vertical-align: top;
+			color: #a0a0a0;
+			line-height: 28px;
+			width: 150px;
+			height: 28px;
+			margin: 0;
+			padding: 0;
+			border-radius: 5px;
+			background-color: black;
+			transition: color 0.5s, box-shadow 0.5s;
+		}
+		
+		#controls li a:hover .control-label
+		{
+			color: #ffffff;
+			box-shadow: 0px 0px 2px #ffffff;
+		}
+		
+		#audio-selector
+		{
+			display: none;
+		}
+		
+		#transcript
+		{
+			width: 100%;
+			height: calc(100% - 200px);
+		}
+		
+		#help
+		{
+			position: absolute;
+			top: -100%;
+			left: 0;
+			width: calc(100% - 8em);
+			height: calc(100% - 4em);
+			overflow-y: scroll;
+			overflow-x: auto;
+			padding: 2em 4em;
+			background: #262627;
+			color: #959595;
+			background-image: url("images/noise4.png");
+			transition: top 0.5s;
+			transition-timing-function: ease-in-out
+		}
+		
+		#help > img
+		{
+			display: block;
+			margin-left: auto;
+			margin-right: auto;
+		}
+		
+		.shortcut-key
+		{
+			background-color: #F5F5DC;
+			color: #606060;
+			padding: 1px 5px;
+			margin: 5px 5px;
+			border-radius: 4px;
+			border: 1px solid #c5c5ac;
+			box-shadow: 0 3px 0 2px #c5c5ac;
+			font-size: 0.8em;
+			text-transform: uppercase;
+			line-height: 2em;
+		}
+		
+		#close-link, #help-link
+		{
+			display: inline-block;
+			right: 40px;
+			position: fixed;
+			background-color: #a0a0a0;
+			border-radius: 28px;
+		}
+		
+		#close-link img, #help-link img
+		{
+			border-radius: 28px;
+			vertical-align: middle;
+		}
+		
+		#copyright
+		{
+			text-align: center;
+		}
+	</style>
+	<script type = 'text/javascript'>
+
+	var audio = null;
+	var time = 0;
+	var f = null;
+	var fl = null;
+	var sl = null;
+	var p = null;
+	var h = null;
+	var t = null;
+	var shiftMode = false;
+	var ctrlMode = false;
+	var altMode = false;
+	var playSpeed = 1;
+
+	function init()
+	{
+		audio = document.getElementsByTagName("audio")[0];
+		audio.addEventListener("timeupdate", timeupdateHandler);
+		audio.addEventListener("play", playPauseHandler);
+		audio.addEventListener("pause", playPauseHandler);
+		audio.play();
+		audio.pause();
+
+		h = document.getElementById('help');
+		p = document.getElementById('play-button');
+		sl = document.getElementById('speed-label');
+		fl = document.getElementById('audio-selector-label');
+
+		f = document.getElementById('audio-selector');
+		f.accept = 'audio/*';
+
+		t = document.getElementById('transcript');
+		t.addEventListener('keypress', shortcutHandler);
+		t.addEventListener('keydown', modifierDownHandler);
+		t.addEventListener('keyup', modifierUpHandler);
+		t.focus();
+	}
+
+	function zeropad(number)
+	{
+	    return(number >= 10 ? number : '0' + number);
+	}
+
+	function time_to_seconds(time)
+	{
+		var s = time.attributes.datetime.value.split(":");
+		return parseInt(s[0] * 3600, 10) + parseInt(s[1] * 60, 10) + parseInt(s[2], 10);
+	}
+
+	function seconds_to_stamp(sec)
+	{
+		var t = "";
+		if (sec > 60 * 60)
+		{
+			t = zeropad(Math.floor(sec / 60 / 60)) + ":";
+			sec = sec % (60 * 60);
+		}
+		else
+		{
+			t = "00:";
+		}
+
+		if (sec > 60)
+		{
+			t = t + zeropad(Math.floor(sec / 60)) + ":";
+			sec = sec % 60;
+		}
+		else
+		{
+			t = t + "00:";
+		}
+
+		t = t + zeropad(Math.floor(sec)) + " ";
+
+		return t;
+	}
+
+	function modifierDownHandler(e)
+	{
+		var k = e.charCode || e.keyCode;
+		if (k == 16)
+		{
+			shiftMode = true;
+		}
+		else if (k == 17)
+		{
+			ctrlMode = true;
+		}
+		else if (k == 18)
+		{
+			altMode = true;
+		}
+	}
+
+	function modifierUpHandler(e)
+	{
+		var k = e.charCode || e.keyCode;
+		if (k == 16)
+		{
+			shiftMode = false;
+		}
+		else if (k == 17)
+		{
+			ctrlMode = false;
+		}
+		else if (k == 18)
+		{
+			altMode = false;
+		}
+	}
+
+	function shortcutHandler(e)
+	{
+		var k = e.charCode || e.keyCode;
+		if (k == 37) //Left cursor key
+		{
+			if (altMode)
+			{
+				if (shiftMode)
+				{
+					seekBack(10);
+					e.preventDefault();
+				}
+				seekBack();
+				e.preventDefault();
+			}
+		}
+		else if (k == 38) //Up cursor key
+		{
+			if (altMode)
+			{
+				speedChange(0.25);
+				e.preventDefault();
+			}
+		}
+		else if (k == 39) //Right cursor key
+		{
+			if (altMode)
+			{
+				if (shiftMode)
+				{
+					seekForward(10);
+					e.preventDefault();
+				}
+				seekForward();
+				e.preventDefault();
+			}
+		}
+		else if (k == 40) //Down cursor key
+		{
+			if (altMode)
+			{
+				speedChange(-0.25);
+				e.preventDefault();
+			}
+		}
+		else if (k == 32) //Space key
+		{
+			if (shiftMode)
+			{
+				playToggle();
+				e.preventDefault();
+			}
+		}
+		else if (k == 13) //Enter key
+		{
+			if (shiftMode)
+			{
+				insertTimestamp();
+				e.preventDefault();
+			}
+		}
+		else if (k == 111) //o key
+		{
+			if (ctrlMode)
+			{
+				selectAudio();
+				e.preventDefault();
+			}
+		}
+		else if (k == 104) //h key
+		{
+			if (ctrlMode)
+			{
+				helpToggle();
+				e.preventDefault();
+			}
+		}
+		else if (k == 114) //r key
+		{
+			if (ctrlMode)
+			{
+				speedReset();
+				e.preventDefault();
+			}
+		}
+		else if (k == 9) //Tab key
+		{
+			insertTab();
+			e.preventDefault();
+		}
+		
+		return false; //We do this because *some* browsers don't like event.preventDefault()
+		
+		//console.log(k); //This is handy for debugging
+	}
+
+	var timeupdateHandler = function(event)
+	{
+		time = event.target.currentTime;
+	}
+	
+	var playPauseHandler = function(event)
+	{
+		if (audio.paused)
+		{
+			p.src = 'images/play-big.svg';
+		}
+		else
+		{
+			p.src = 'images/pause-big.svg';
+		}
+	}
+
+	function playToggle()
+	{
+		if(audio)
+		{
+			if (audio.paused)
+			{
+				audio.play();
+			}
+			else
+			{
+				audio.pause();
+			}
+		}
+	}
+	
+	function seekBack(distance)
+	{
+		distance = parseInt(distance);
+		if (isNaN(distance))
+		{
+			distance = 3;
+		}
+
+		audio.currentTime = audio.currentTime - distance;
+	}
+
+	function seekForward(distance)
+	{
+		distance = parseInt(distance);
+		if (isNaN(distance))
+		{
+			distance = 3;
+		}
+		audio.currentTime = audio.currentTime + distance;
+	}
+
+	function speedChange(accel)
+	{
+		playSpeed = playSpeed + accel;
+		if (playSpeed < 0.5) //Any slower than this and we can't hear anything
+		{
+			playSpeed = 0.5;
+		}
+		if (playSpeed > 4) //Any faster than this and we can't hear anything
+		{
+			playSpeed = 4;
+		}
+		audio.playbackRate = playSpeed;
+		updateSpeedLabel();
+	}
+	
+	function speedReset()
+	{
+		playSpeed = 1;
+		audio.playbackRate = playSpeed;
+		updateSpeedLabel();
+	}
+	
+	function updateSpeedLabel()
+	{
+		sl.innerHTML = (playSpeed * 100) + "% Speed";
+	}
+
+	function insertTab()
+	{
+		insertText("\t", t);
+	}
+
+	function insertTimestamp()
+	{
+		insertText(seconds_to_stamp(time), t);
+	}
+
+	function insertText(text, e)
+	{
+		var val = e.value, endIndex, range;
+		if (typeof e.selectionStart != "undefined" && typeof e.selectionEnd != "undefined")
+		{
+			endIndex = e.selectionEnd;
+			e.value = val.slice(0, e.selectionStart) + text + val.slice(endIndex);
+			e.selectionStart = e.selectionEnd = endIndex + text.length;
+		}
+		else if (typeof document.selection != "undefined" && typeof document.selection.createRange != "undefined")
+		{
+			e.focus();
+			range = document.selection.createRange();
+			range.collapse(false);
+			range.text = text;
+			range.select();
+		}
+	}
+	
+	function selectAudio()
+	{
+		if (f)
+		{
+			var e = document.createEvent("MouseEvents");
+			e.initEvent("click", true, false);
+			f.dispatchEvent(e);
+		}
+		else
+		{
+			console.log("For some reason, f is null ;_;");
+			console.log(f);
+		}
+	}
+
+	function loadAudio(f, v)
+	{
+		if (audio)
+		{
+			var file = URL.createObjectURL(f[0]); 
+			audio.src = file;
+			audio.load();
+			audio.play();
+			audio.pause();
+			//console.log(f);
+			fl.innerHTML = v;
+		}
+	}
+	
+	function highlightControl(c)
+	{
+		e = document.getElementById(c)
+		if (e)
+		{
+			//TODO: Make this work?
+		}
+		
+	}
+	
+	function helpToggle()
+	{
+		if (h.style.top == "0px")
+		{
+			h.style.top = "-100%";
+		}
+		else
+		{
+			h.style.top = "0px";
+		}
+	}
+
+	</script>
+</head>
+<body onload = 'javascript:init()'>
+	<a id = 'help-link' onclick = 'javascript:helpToggle();'><img src = 'images/help.svg' alf = '[help]'></a>
+	<ul id = 'controls'>
+		<li>
+			<a onclick = 'javascript:seekBack(5);' title = 'Seek back 5: Alt+Left'>
+				<img src = 'images/seek-back-5.svg' class = 'control-icon' alt = 'Seek back 5: Alt+Shift+Left'>
+			</a>
+		</li>
+		<li class = 'bottom-icon'>
+			<a onclick = 'javascript:seekBack(10);' title = 'Seek back 10: Alt+Shift+Left'>
+				<img src = 'images/seek-back-10.svg' class = 'control-icon' alt = 'Seek back 10: Alt+Shift+Left'>
+			</a>
+		</li>
+		<li>
+			<a onclick = 'javascript:playToggle();' title = 'Play/Pause: Shift+Space'>
+				<img id = 'play-button' src = 'images/play-big.svg' class = 'control-icon' alt = 'Play/Pause: Shift+Space'>
+			</a>
+		</li>
+		<li>
+			<a onclick = 'javascript:seekForward(5);' title = 'Seek forward 5: Alt+Right'>
+				<img src = 'images/seek-forward-5.svg' class = 'control-icon' alt = 'Seek forward 5: Alt+Right'>
+			</a>
+		</li>
+		<li class = 'bottom-icon'>
+			<a onclick = 'javascript:seekForward(10);' title = 'Seek forward 10: Alt+Shift+Right'>
+				<img src = 'images/seek-forward-10.svg' class = 'control-icon' alt = 'Seek forward 10: Alt+Shift+Right'>
+			</a>
+		</li>
+		<li>
+			<a onclick = 'javascript:speedChange(0.25);' title = 'Speed up: Alt+Up'>
+				<img src = 'images/speed-up.svg' class = 'control-icon' alt = 'Speed up: Alt+Up'>
+			</a>
+		</li>
+		<li class = 'bottom-icon'>
+			<a onclick = 'javascript:speedChange(-0.25);' title = 'Speed down: Alt+Down'>
+				<img src = 'images/speed-down.svg' class = 'control-icon' alt = 'Speed down: Alt+Down'>
+			</a>
+		</li>
+		<li>
+			<a onclick = 'javascript:insertTimestamp(5);' title = 'Insert timestamp: Shift+Enter'>
+				<img src = 'images/timestamp.svg' class = 'control-icon' alt = 'Insert timestamp: Shift+Enter'>
+			</a>
+		</li>
+		<li class = 'bottom-icon'>
+			<a onclick = 'javascript:insertTab();' title = 'Insert tab: Tab'>
+				<img src = 'images/tab.svg' class = 'control-icon' alt = 'Insert tab: Tab'>
+			</a>
+		</li>
+		<li>
+			<a onclick = 'javascript:selectAudio();' title = 'Select Audio File'>
+				<img src = 'images/open.svg' class = 'control-icon' alt = 'Select Audio File'>
+				<p id = 'audio-selector-label' class = 'control-label'>Select Audio...</p>
+			</a>
+		</li>
+		<li class = 'bottom-icon'>
+			<a onclick = 'javascript:speedReset();' title = 'Current Playback Speed. Click to reset.'>
+				<img src = 'images/speed.svg' class = 'control-icon' alt = 'Current Playback Speed. Click to reset.'>
+				<p id = 'speed-label' class = 'control-label'>100% Speed</p>
+			</a>
+		</li>
+	</ul>
+	<input type = 'file' name = 'audio-selector' id = 'audio-selector' onchange = 'javascript:loadAudio(this.files, this.value);' />
+	<audio preload='none' src='res/empty.ogg' controls >Your browser does not support the &lt;audio&gt; tag.</audio>
+	<br />
+	<textarea id = 'transcript'></textarea>
+	<p id = 'copyright'>&copy; 2014 <a href = 'https://jbushproductions.com/'>J Bush Productions</a> & <a href = 'http://github.com/cheeseness/transcriberer'>Contributors</a></p>
+	<div id = 'help'>
+		<a id = 'close-link' onclick = 'javascript:helpToggle();'><img src = 'images/close.svg' alf = '[close]'></a>
+		<img src = 'images/logo-big.svg' alt = 'Transcriberer' />
+		<h1>About</h1>
+		<p>Transcriberer is a tool to assist with transcribing local audio files. It exposes convenient keyboard shortcuts for playback control and time stamp insertion without the text input area losing focus.</p>
+		<p>It was written to assist with the creation of shownotes for <a href = 'http://steamlug.org/cast'>SteamLUG Cast</a> and for transcribing audio interviews for <a href = 'http://cheesetalks.twolofbees.com'>Cheese Talks</a> by <a href = 'http://twitter.com/valiantcheese'>@ValiantCheese</a>.</p>
+		<p>The types of audio files which can be opened is dependent upon the types of audio files that your browser is capable of playing in a HTML5 audio element.</p>
+		<p>Source can be found in the <a href = 'http://github.org/Cheeseness/transcriberer'>Transcriberer GitHub repository</a>, and an unmodified version can be found at <a href = 'http://transcriberer.jbushproductions.com'>Transcriberer web page</a>.</p>
+		<h1>Controls</h1>
+		<p>With the text area in focus (<em>they will <strong>not</strong> work otherwise</em>), the following controls are available:</p>
+		<h2>Playback</h2>
+		<ul>
+			<li><span class = 'shortcut-key'>Shift</span> + <span class = 'shortcut-key'>Space</span>: Play/pause</li>
+			<li><span class = 'shortcut-key'>Alt</span> + <span class = 'shortcut-key'>Up</span>: Increase playback speed</li>
+			<li><span class = 'shortcut-key'>Alt</span> + <span class = 'shortcut-key'>Down</span>: Decrease playback speed</li>
+			<li><span class = 'shortcut-key'>Ctrl</span> + <span class = 'shortcut-key'>R</span>: Reset playback speed</li>
+		</ul>
+		<h2>Seeking</h2>
+		<ul>
+			<li><span class = 'shortcut-key'>Alt</span> + <span class = 'shortcut-key'>Left</span>: Seek backward by 5 seconds</li>
+			<li><span class = 'shortcut-key'>Alt</span> + <span class = 'shortcut-key'>Shift</span> + <span class = 'shortcut-key'>Left</span>: Seek backward by 10 seconds</li>
+			<li><span class = 'shortcut-key'>Alt</span> + <span class = 'shortcut-key'>Right</span>: Seek forward by 5 seconds</li>
+			<li><span class = 'shortcut-key'>Alt</span> + <span class = 'shortcut-key'>Shift</span> + <span class = 'shortcut-key'>Right</span>: Seek forward by 10 seconds</li>
+		</ul>
+		<h2>Other</h2>
+		<ul>
+			<li><span class = 'shortcut-key'>Shift</span> + <span class = 'shortcut-key'>Enter</span>: Insert timestamp at cursor position</li>
+			<li><span class = 'shortcut-key'>Tab</span>: Insert tab character at cursor position</li>
+			<li><span class = 'shortcut-key'>Ctrl</span> + <span class = 'shortcut-key'>O</span>: Select audio file to play</li>
+			<li><span class = 'shortcut-key'>Ctrl</span> + <span class = 'shortcut-key'>H</span>: Show this screen</li>
+		</ul>
+	</div>
+</body>
+</html>
