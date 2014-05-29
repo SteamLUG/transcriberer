@@ -160,6 +160,35 @@
 			margin-right: auto;
 		}
 		
+		#modifierList
+		{
+			list-style-type: none;
+			position: absolute;
+			right: 0;
+			bottom: 0;
+			margin: 1em;
+			padding: 0;
+		}
+		
+		#modifierList li
+		{
+			display: block;
+			float: left;
+			opacity: 0.75;
+		}
+		
+		#modifierList .modifierDown
+		{
+			margin-top: 3px;
+			margin-bottom: -3px;
+			opacity: 1.0;
+		}
+		
+		#modifierList .modifierDown .shortcut-key
+		{
+			box-shadow: 0 1px 0 1px #C5C5AC;
+		}
+		
 		.shortcut-key
 		{
 			background-color: #F5F5DC;
@@ -211,15 +240,19 @@
 	var p = null;
 	var h = null;
 	var t = null;
+	var shiftIndicator = null;
+	var ctrlIndicator = null;
+	var altIndicator = null;
 	var shiftMode = false;
 	var ctrlMode = false;
 	var altMode = false;
 	var playSpeed = 1;
+	var volume = 1;
 
 	function init()
 	{
 		audio = document.getElementsByTagName("audio")[0];
-		audio.addEventListener("timeupdate", timeupdateHandler);
+		audio.addEventListener("timeupdate", timeUpdateHandler);
 		audio.addEventListener("play", playPauseHandler);
 		audio.addEventListener("pause", playPauseHandler);
 		audio.play();
@@ -237,26 +270,31 @@
 		t.addEventListener('keypress', shortcutHandler);
 		t.addEventListener('keydown', modifierDownHandler);
 		t.addEventListener('keyup', modifierUpHandler);
+		t.onblur = modifierReset;
 		t.focus();
+		
+		shiftIndicator = document.getElementById('indicatorShift');
+		ctrlIndicator = document.getElementById('indicatorCtrl');
+		altIndicator = document.getElementById('indicatorAlt');
 	}
 
-	function zeropad(number)
+	function zeroPad(number)
 	{
 	    return(number >= 10 ? number : '0' + number);
 	}
 
-	function time_to_seconds(time)
+	function secondsFromTime(time)
 	{
 		var s = time.attributes.datetime.value.split(":");
 		return parseInt(s[0] * 3600, 10) + parseInt(s[1] * 60, 10) + parseInt(s[2], 10);
 	}
 
-	function seconds_to_stamp(sec)
+	function timeFromSeconds(sec)
 	{
 		var t = "";
 		if (sec > 60 * 60)
 		{
-			t = zeropad(Math.floor(sec / 60 / 60)) + ":";
+			t = zeroPad(Math.floor(sec / 60 / 60)) + ":";
 			sec = sec % (60 * 60);
 		}
 		else
@@ -266,7 +304,7 @@
 
 		if (sec > 60)
 		{
-			t = t + zeropad(Math.floor(sec / 60)) + ":";
+			t = t + zeroPad(Math.floor(sec / 60)) + ":";
 			sec = sec % 60;
 		}
 		else
@@ -274,7 +312,7 @@
 			t = t + "00:";
 		}
 
-		t = t + zeropad(Math.floor(sec)) + " ";
+		t = t + zeroPad(Math.floor(sec)) + " ";
 
 		return t;
 	}
@@ -285,14 +323,17 @@
 		if (k == 16)
 		{
 			shiftMode = true;
+			modifierIndicatorUpdate(shiftIndicator, shiftMode);
 		}
 		else if (k == 17)
 		{
 			ctrlMode = true;
+			modifierIndicatorUpdate(ctrlIndicator, ctrlMode);
 		}
 		else if (k == 18)
 		{
 			altMode = true;
+			modifierIndicatorUpdate(altIndicator, altMode);
 		}
 	}
 
@@ -302,14 +343,39 @@
 		if (k == 16)
 		{
 			shiftMode = false;
+			modifierIndicatorUpdate(shiftIndicator, shiftMode);
 		}
 		else if (k == 17)
 		{
 			ctrlMode = false;
+			modifierIndicatorUpdate(ctrlIndicator, ctrlMode);
 		}
 		else if (k == 18)
 		{
 			altMode = false;
+			modifierIndicatorUpdate(altIndicator, altMode);
+		}
+	}
+	
+	function modifierReset()
+	{
+		shiftMode = false;
+		crtlMode = false;
+		altMode = false;
+		modifierIndicatorUpdate(shiftIndicator, shiftMode);
+		modifierIndicatorUpdate(ctrlIndicator, ctrlMode);
+		modifierIndicatorUpdate(altIndicator, altMode);
+	}
+	
+	function modifierIndicatorUpdate(i, v)
+	{
+		if (v)
+		{
+			i.className = "modifierDown";
+		}
+		else
+		{
+			i.className = "";
 		}
 	}
 
@@ -409,12 +475,12 @@
 		//console.log(k); //This is handy for debugging
 	}
 
-	var timeupdateHandler = function(event)
+	function timeUpdateHandler(event)
 	{
 		time = event.target.currentTime;
 	}
 	
-	var playPauseHandler = function(event)
+	function playPauseHandler(event)
 	{
 		if (audio.paused)
 		{
@@ -496,7 +562,7 @@
 
 	function insertTimestamp()
 	{
-		insertText(seconds_to_stamp(time), t);
+		insertText(timeFromSeconds(time), t);
 	}
 
 	function insertText(text, e)
@@ -636,6 +702,11 @@
 	<audio preload='none' src='res/empty.ogg' controls >Your browser does not support the &lt;audio&gt; tag.</audio>
 	<br />
 	<textarea id = 'transcript'></textarea>
+	<ul id = modifierList>
+			<li id = 'indicatorShift'><span class = 'shortcut-key'>Shift</span></li>
+			<li id = 'indicatorCtrl'><span class = 'shortcut-key'>Ctrl</span></li>
+			<li id = 'indicatorAlt'><span class = 'shortcut-key'>Alt</span></li>
+	</ul>
 	<p id = 'copyright'>&copy; 2014 <a href = 'http://jbushproductions.com/'>J Bush Productions</a> & <a href = 'http://github.com/cheeseness/transcriberer'>Contributors</a></p>
 	<div id = 'help'>
 		<a id = 'close-link' onclick = 'javascript:helpToggle();'><img src = 'images/close.svg' alt = '[close]'></a>
