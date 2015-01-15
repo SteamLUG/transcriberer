@@ -634,15 +634,31 @@
 	/* This naïvely replaces template style text in the textarea, populated from the Ogg metadata block */
 	function loadMetaData()
 	{
+		function pad(number) {
+			return ("00" + number).slice(-2);
+		}
+
+		function secondsToHms(d) {
+			d = Number(d);
+			var h = Math.floor(d / 3600);
+			var m = Math.floor(d % 3600 / 60);
+			var s = Math.floor(d % 3600 % 60);
+			return pad( h ) + ":"  + pad( m ) + ":" + pad( s );
+		}
+
 		if (audio)
 		{
 			if (audio.mozGetMetadata)
 			{
 				episode		= audio.mozGetMetadata();
 				t.value		= t.value.replace( "{TITLE}", episode['title'].substring(6) );
-				t.value		= t.value.replace( "{SEASON}", ( "00" + episode['album number'] ).slice(-2) );
-				t.value		= t.value.replace( "{EPISODE}", ( "00" + episode['tracknumber'] ).slice(-2) );
+				t.value		= t.value.replace( "{SEASON}", pad( episode['album number'] ) );
+				t.value		= t.value.replace( "{EPISODE}", pad( episode['tracknumber'] ) );
 				t.value		= t.value.replace( "{RECORDED}", episode['date'] );
+				today		= new Date();
+				todayfill	= today.getUTCFullYear() + '-' + pad(today.getUTCMonth() + 1) + '-' + pad(today.getUTCDate());
+				t.value		= t.value.replace( "{TODAY}", todayfill );
+				t.value		= t.value.replace( "{DURATION}", secondsToHms( audio.duration ) );
 			}
 			else
 				console.log('Metadata cannot be read, you need a better browser, yo');
@@ -752,17 +768,18 @@
 	<audio preload='none' src='res/empty.ogg' controls >Your browser does not support the &lt;audio&gt; tag.</audio>
 	<br />
 	<textarea id = 'transcript'>
-RECORDED: 2014-##-##
-PUBLISHED: 2014-##-##
-TITLE: Capitalised Name
-SEASON: 02
-EPISODE: ##
-DURATION: HH:MM:SS
+RECORDED: {RECORDED}
+PUBLISHED: {TODAY}
+TITLE: {TITLE}
+SEASON: {SEASON}
+EPISODE: {EPISODE}
+DURATION: {DURATION}
 FILENAME: steamlugcast.s02e##.name-without-extension
 DESCRIPTION: Chatty Description
 HOSTS: @twitter, Name @twitter, Name (nickname), @twitter {URL}
-GUESTS: @Twitter, nickname, Name (@twitter), Name (Organisation)
-ADDITIONAL:
+GUESTS: Name, Name (@twitter), Name (Organisation)
+ADDITIONAL: appid, appid, url to capsule
+YOUTUBE: hashid
 
 *Introduction*
 
@@ -778,10 +795,6 @@ ADDITIONAL:
 
 *Sign-off*
 
-  SteamLUG Cast is a casual, fortnightly audiocast which aims to provide interesting news and discussion for the SteamLUG and broader Linux gaming communities.
-  Visit our site http://steamlug.org/ and the cast homepage http://steamlug.org/cast
-  Email us feedback, questions, tips and suggestions to cast@steamlug.org
-  We can be followed on Twitter @steamlug, or as individuals ###################
 </textarea>
 	<ul id = modifierList>
 			<li id = 'indicatorShift'><span class = 'shortcut-key'>Shift</span></li>
