@@ -281,7 +281,7 @@
 
 	function zeroPad(number)
 	{
-	    return(number >= 10 ? number : '0' + number);
+		return ("00" + number).slice(-2);
 	}
 
 	function secondsFromTime(time)
@@ -292,30 +292,11 @@
 
 	function timeFromSeconds(sec)
 	{
-		var t = "";
-		if (sec > 60 * 60)
-		{
-			t = zeroPad(Math.floor(sec / 60 / 60)) + ":";
-			sec = sec % (60 * 60);
-		}
-		else
-		{
-			t = "00:";
-		}
-
-		if (sec > 60)
-		{
-			t = t + zeroPad(Math.floor(sec / 60)) + ":";
-			sec = sec % 60;
-		}
-		else
-		{
-			t = t + "00:";
-		}
-
-		t = t + zeroPad(Math.floor(sec)) + " ";
-
-		return t;
+		d = Number(sec);
+		var h = Math.floor(d / 3600);
+		var m = Math.floor(d % 3600 / 60);
+		var s = Math.floor(d % 3600 % 60);
+		return zeroPad( h ) + ":"  + zeroPad( m ) + ":" + zeroPad( s );
 	}
 
 	function modifierDownHandler(e)
@@ -594,7 +575,7 @@
 
 	function insertTimestamp()
 	{
-		insertText(timeFromSeconds(time), t);
+		insertText(timeFromSeconds(time) + " ", t);
 	}
 
 	function insertText(text, e)
@@ -647,18 +628,6 @@
 	/* This naïvely replaces template style text in the textarea, populated from the Ogg metadata block */
 	function loadMetaData()
 	{
-		function pad(number) {
-			return ("00" + number).slice(-2);
-		}
-
-		function secondsToHms(d) {
-			d = Number(d);
-			var h = Math.floor(d / 3600);
-			var m = Math.floor(d % 3600 / 60);
-			var s = Math.floor(d % 3600 % 60);
-			return pad( h ) + ":"  + pad( m ) + ":" + pad( s );
-		}
-
 		if (audio)
 		{
 			if (audio.mozGetMetadata)
@@ -668,13 +637,13 @@
 					return;
 				}
 				t.value		= t.value.replace( "{TITLE}", episode.hasCI('title').substring(6) );
-				t.value		= t.value.replace( "{SEASON}", pad( episode.hasCI('album number') ) );
-				t.value		= t.value.replace( "{EPISODE}", pad( episode.hasCI('tracknumber') ) );
+				t.value		= t.value.replace( "{SEASON}", zeroPad( episode.hasCI('album number') ) );
+				t.value		= t.value.replace( "{EPISODE}", zeroPad( episode.hasCI('tracknumber') ) );
 				t.value		= t.value.replace( "{RECORDED}", episode.hasCI('date') );
 				today		= new Date();
-				todayfill	= today.getUTCFullYear() + '-' + pad(today.getUTCMonth() + 1) + '-' + pad(today.getUTCDate());
+				todayfill	= today.getUTCFullYear() + '-' + zeroPad(today.getUTCMonth() + 1) + '-' + zeroPad(today.getUTCDate());
 				t.value		= t.value.replace( "{TODAY}", todayfill );
-				t.value		= t.value.replace( "{DURATION}", secondsToHms( audio.duration ) );
+				t.value		= t.value.replace( "{DURATION}", timeFromSeconds( audio.duration ) );
 			}
 			else
 				console.log('Metadata cannot be read, you need a better browser, yo');
