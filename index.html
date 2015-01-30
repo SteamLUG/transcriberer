@@ -631,6 +631,19 @@
 		}
 	}
 
+	/* mozGetMetadata returns case-sensitive data, we don’t want that */
+	Object.prototype.hasCI = function(prop) {
+
+		if (!this.lowerkeys) {
+			var lowerkeys = [];
+			for (var l in this) {
+				lowerkeys[l.toLowerCase()] = this[l];
+			}
+			this.lowerkeys = lowerkeys;
+		}
+		return this.lowerkeys[prop];
+	}
+
 	/* This naïvely replaces template style text in the textarea, populated from the Ogg metadata block */
 	function loadMetaData()
 	{
@@ -651,10 +664,13 @@
 			if (audio.mozGetMetadata)
 			{
 				episode		= audio.mozGetMetadata();
-				t.value		= t.value.replace( "{TITLE}", episode['title'].substring(6) );
-				t.value		= t.value.replace( "{SEASON}", pad( episode['album number'] ) );
-				t.value		= t.value.replace( "{EPISODE}", pad( episode['tracknumber'] ) );
-				t.value		= t.value.replace( "{RECORDED}", episode['date'] );
+				if ( (Object.keys) && (Object.keys(episode).length === 0) ) {
+					return;
+				}
+				t.value		= t.value.replace( "{TITLE}", episode.hasCI('title').substring(6) );
+				t.value		= t.value.replace( "{SEASON}", pad( episode.hasCI('album number') ) );
+				t.value		= t.value.replace( "{EPISODE}", pad( episode.hasCI('tracknumber') ) );
+				t.value		= t.value.replace( "{RECORDED}", episode.hasCI('date') );
 				today		= new Date();
 				todayfill	= today.getUTCFullYear() + '-' + pad(today.getUTCMonth() + 1) + '-' + pad(today.getUTCDate());
 				t.value		= t.value.replace( "{TODAY}", todayfill );
