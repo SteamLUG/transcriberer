@@ -8,7 +8,7 @@
 		{
 			height: 100%;
 		}
-		
+
 		body
 		{
 			background: #262627;
@@ -17,19 +17,19 @@
 			overflow: hidden;
 			font-family: sans;
 		}
-		
+
 		a
 		{
 			color: #e0e0e0;
 			text-decoration: none;
 		}
-		
+
 		a:hover
 		{
 			color: #ffffff;
 			text-decoration: underline;
 		}
-		
+
 		body:before
 		{
 			content: "";
@@ -42,7 +42,7 @@
 			background: url("images/background.svg");
 			transform: rotate(-10deg);
 		}
-		
+
 		audio
 		{
 			width: 100%;
@@ -56,7 +56,7 @@
 			margin: 30px 0 0 0;
 			padding: 0;
 		}
-		
+
 		#controls li
 		{
 			display: inline-block;
@@ -64,12 +64,12 @@
 			margin: 0;
 			padding: 0;
 		}
-		
+
 		#controls li a
 		{
 			text-decoration: none;
 		}
-		
+
 		.bottom-icon
 		{
 			position: relative;
@@ -77,7 +77,7 @@
 			/* TODO: This is less nice than I'd like */
 			margin-left: -45px !important;
 		}
-		
+
 		.bottom-icon:last-child
 		{
 			/* TODO: This is less nice than I'd like */
@@ -89,7 +89,7 @@
 			width: 84px;
 			height: 60px;
 		}
-		
+
 		.control-icon
 		{
 			border-radius: 5px;
@@ -103,7 +103,7 @@
 			box-shadow: 0px 0px 2px #ffffff;
 			transition: background-color 0.5s, box-shadow 0.5s;
 		}
-		
+
 		.control-label
 		{
 			display: inline-block;
@@ -118,24 +118,24 @@
 			background-color: black;
 			transition: color 0.5s, box-shadow 0.5s;
 		}
-		
+
 		#controls li a:hover .control-label
 		{
 			color: #ffffff;
 			box-shadow: 0px 0px 2px #ffffff;
 		}
-		
+
 		#audio-selector
 		{
 			display: none;
 		}
-		
+
 		#transcript
 		{
 			width: 100%;
 			height: calc(100% - 200px);
 		}
-		
+
 		#help
 		{
 			position: absolute;
@@ -152,14 +152,14 @@
 			transition: top 0.5s;
 			transition-timing-function: ease-in-out
 		}
-		
+
 		#help > img
 		{
 			display: block;
 			margin-left: auto;
 			margin-right: auto;
 		}
-		
+
 		#modifierList
 		{
 			list-style-type: none;
@@ -169,26 +169,26 @@
 			margin: 1em;
 			padding: 0;
 		}
-		
+
 		#modifierList li
 		{
 			display: block;
 			float: left;
 			opacity: 0.75;
 		}
-		
+
 		#modifierList .modifierDown
 		{
 			margin-top: 3px;
 			margin-bottom: -3px;
 			opacity: 1.0;
 		}
-		
+
 		#modifierList .modifierDown .shortcut-key
 		{
 			box-shadow: 0 1px 0 1px #C5C5AC;
 		}
-		
+
 		.shortcut-key
 		{
 			background-color: #F5F5DC;
@@ -202,7 +202,7 @@
 			text-transform: uppercase;
 			line-height: 2em;
 		}
-		
+
 		#close-link, #help-link
 		{
 			display: inline-block;
@@ -211,20 +211,20 @@
 			background-color: #a0a0a0;
 			border-radius: 28px;
 		}
-		
+
 		#close-link:hover, #help-link:hover
 		{
 			background-color: #ffffff;
 			box-shadow: 0px 0px 2px #ffffff;
 			transition: background-color 0.5s, box-shadow 0.5s;
 		}
-		
+
 		#close-link img, #help-link img
 		{
 			border-radius: 28px;
 			vertical-align: middle;
 		}
-		
+
 		#copyright
 		{
 			text-align: center;
@@ -273,7 +273,7 @@
 		t.addEventListener('keyup', modifierUpHandler);
 		t.onblur = modifierReset;
 		t.focus();
-		
+
 		shiftIndicator = document.getElementById('indicatorShift');
 		ctrlIndicator = document.getElementById('indicatorCtrl');
 		altIndicator = document.getElementById('indicatorAlt');
@@ -338,7 +338,7 @@
 			modifierIndicatorUpdate(altIndicator, altMode);
 		}
 	}
-	
+
 	function modifierReset()
 	{
 		shiftMode = false;
@@ -348,7 +348,7 @@
 		modifierIndicatorUpdate(ctrlIndicator, ctrlMode);
 		modifierIndicatorUpdate(altIndicator, altMode);
 	}
-	
+
 	function modifierIndicatorUpdate(i, v)
 	{
 		if (v)
@@ -462,9 +462,9 @@
 			insertTab();
 			e.preventDefault();
 		}
-		
+
 		return false; //We do this because *some* browsers don't like event.preventDefault()
-		
+
 		//console.log(k); //This is handy for debugging
 	}
 
@@ -472,12 +472,12 @@
 	{
 		time = event.target.currentTime;
 	}
-	
+
 	function volumeUpdateHandler(event)
 	{
 		volume = audio.volume;
 	}
-	
+
 	function playPauseHandler(event)
 	{
 		if (audio.paused)
@@ -504,7 +504,7 @@
 			}
 		}
 	}
-	
+
 	function seekBack(distance)
 	{
 		distance = parseInt(distance);
@@ -540,14 +540,14 @@
 		audio.playbackRate = playSpeed;
 		updateSpeedLabel();
 	}
-	
+
 	function speedReset()
 	{
 		playSpeed = 1;
 		audio.playbackRate = playSpeed;
 		updateSpeedLabel();
 	}
-	
+
 	function volumeChange(diff)
 	{
 		volume = volume + diff;
@@ -562,7 +562,7 @@
 
 		audio.volume = volume;
 	}
-	
+
 	function updateSpeedLabel()
 	{
 		sl.innerHTML = (playSpeed * 100) + "% Speed";
@@ -596,7 +596,7 @@
 			range.select();
 		}
 	}
-	
+
 	function selectAudio()
 	{
 		if (f)
@@ -654,7 +654,7 @@
 	{
 		if (audio)
 		{
-			var file = URL.createObjectURL(f[0]); 
+			var file = URL.createObjectURL(f[0]);
 			audio.src = file;
 			audio.load();
 			audio.play();
@@ -663,7 +663,7 @@
 			fl.innerHTML = v;
 		}
 	}
-	
+
 	function highlightControl(c)
 	{
 		e = document.getElementById(c)
@@ -671,9 +671,9 @@
 		{
 			//TODO: Make this work?
 		}
-		
+
 	}
-	
+
 	function helpToggle()
 	{
 		if (h.style.top == "0px")
