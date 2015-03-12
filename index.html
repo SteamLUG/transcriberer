@@ -249,16 +249,30 @@
 	var playSpeed = 1;
 	var volume = 1;
 
+	function getParameterByName(name) {
+		name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+		var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+			results = regex.exec(location.search);
+		return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+	}
+
 	function init()
 	{
+
+		var audioFile = getParameterByName('audio');
 		audio = document.getElementsByTagName("audio")[0];
 		audio.addEventListener("timeupdate", timeUpdateHandler);
 		audio.addEventListener("loadedmetadata", loadMetaData);
 		audio.addEventListener("play", playPauseHandler);
 		audio.addEventListener("pause", playPauseHandler);
-		audio.play();
-		audio.pause();
 
+		if (audioFile != "") {
+			audio.src = audioFile;
+			audio.play();
+		} else {
+			audio.play();
+			audio.pause();
+		}
 		h = document.getElementById('help');
 		p = document.getElementById('play-button');
 		sl = document.getElementById('speed-label');
