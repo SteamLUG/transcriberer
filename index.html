@@ -661,6 +661,16 @@
 			}
 			else
 				console.log('Metadata cannot be read, you need a better browser, yo');
+
+			if ( audio.src )
+			{
+				filepath = audio.src;
+				if ( filepath.lastIndexOf('/') != -1 )
+				{
+					filepath = filepath.substring( filepath.lastIndexOf( '/' ) + 1, filepath.lastIndexOf( '.' ) );
+					t.value	= t.value.replace( "{FILENAME}", filepath );
+				}
+			}
 		}
 	}
 
@@ -773,7 +783,7 @@ TITLE: {TITLE}
 SEASON: {SEASON}
 EPISODE: {EPISODE}
 DURATION: {DURATION}
-FILENAME: steamlugcast.s02e##.name-without-extension
+FILENAME: {FILENAME}
 DESCRIPTION: Chatty Description
 HOSTS: @twitter, Name @twitter, Name (nickname), @twitter {URL}
 GUESTS: Name, Name (@twitter), Name (Organisation)
